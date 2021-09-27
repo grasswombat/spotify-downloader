@@ -1,3 +1,4 @@
+import sys
 import concurrent.futures
 
 from pathlib import Path
@@ -11,6 +12,7 @@ from spotdl.providers import (
 )
 from spotdl.search import SongObject, SpotifyClient
 from spotdl.providers.provider_utils import _get_converted_file_path
+from spotdl.providers.provider_utils import _sanitize_filename
 
 
 def from_spotify_url(
@@ -230,12 +232,7 @@ def from_album(
         else:
             album_name = album_tracks[0]["name"]
 
-        album_name = "".join(char for char in album_name if char not in "/?\\*|<>")
-
-        album_file = Path(f"{album_name}.m3u")
-
-        with open(album_file, "w", encoding="utf-8") as file:
-            file.write(album_text)
+        write_m3u_playlist(album_name, album_text)
 
     return tracks
 
@@ -361,14 +358,7 @@ def from_playlist(
         else:
             playlist_name = playlist_tracks[0]["track"]["name"]
 
-        playlist_name = "".join(
-            char for char in playlist_name if char not in "/?\\*|<>"
-        )
-
-        playlist_file = Path(f"{playlist_name}.m3u")
-
-        with open(playlist_file, "w", encoding="utf-8") as file:
-            file.write(playlist_text)
+        write_m3u_playlist(playlist_name, playlist_text)
 
     return tracks
 
@@ -567,3 +557,16 @@ def from_dump(data_dump: dict) -> SongObject:
     return SongObject(
         raw_track_meta, raw_album_meta, raw_artist_meta, youtube_link, lyrics
     )
+
+def write_m3u_playlist(filename:str, content:str):
+    sanitized = _sanitize_filename(filename)
+    filename_with_extension = Path(f"{sanitized}.m3u")
+
+    encoding = "utf-8"
+
+    # If using windows we use windows encoding, otherwise special characters in playlist don't work
+    if sys.platform == "win32":
+        encoding = "cp1252" 
+
+    with open(filename_with_extension, "w", encoding=encoding) as file:
+        file.write(content)

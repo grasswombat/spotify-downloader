@@ -1,4 +1,5 @@
 import requests
+import unicodedata
 
 from typing import List
 from rapidfuzz import fuzz
@@ -104,6 +105,9 @@ def _get_song_lyrics(song_name: str, song_artists: List[str]) -> str:
     except:  # noqa: E722
         return ""
 
+def _remove_unicode(input_str: str) -> str:
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 def _sanitize_filename(input_str: str) -> str:
     output = input_str
@@ -115,7 +119,7 @@ def _sanitize_filename(input_str: str) -> str:
     # ! like to retain their equivalents, so they aren't removed in the prior loop
     output = output.replace('"', "'").replace(":", "-")
 
-    return output
+    return _remove_unicode(output)
 
 
 def _get_smaller_file_path(input_song, output_format: str) -> Path:
